@@ -1,5 +1,6 @@
 {
     "vpc_id": "vpc-04f489bdd7eaa397d",
     "subnet_id": "subnet-00268a9e9c64dc156",
-    "aws_region": "us-gov-west-1"
+    "aws_region": "us-gov-west-1",
+    "source_ami": "ami-0a4532ae57954fd97"
 }
