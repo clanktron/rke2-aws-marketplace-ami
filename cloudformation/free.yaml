@@ -87,7 +87,7 @@ Conditions:
 Mappings:
   AWSRegionArch2AMI:
     us-gov-east-1:
-      HVM64: ami-09e8c94190f4e7b2c
+      HVM64: ami-0e802598e5722b9ca
     us-gov-west-1:
       HVM64: ami-05aaa50d3cae6007d
   AWSRegion2AZ:
