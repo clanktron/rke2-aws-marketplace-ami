@@ -18,7 +18,7 @@ jobs:
           workingDir: '.'
           varFile: 'packer/east.vars.json'
         env:
-          RKE2_VERSION: "v1.23.10+rke2r1"
+          RKE2_VERSION: "v1.24.7+rke2r1"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-gov-east-1
@@ -33,3 +33,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-gov-west-1
+      - name: Packer build (Commercial)
+        uses: ./.github/actions/build
+        with:
+          templateFile: 'packer/img.json'
+          workingDir: '.'
+          varFile: 'packer/commercial.vars.json'
+        env:
+          RKE2_VERSION: "v1.24.7+rke2r1"
+          AWS_ACCESS_KEY_ID: ${{ secrets.COMMERCIAL_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.COMMERCIAL_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1

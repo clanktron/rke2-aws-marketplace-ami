@@ -1,0 +1,6 @@
+{
+    "vpc_id": "vpc-0b33dbeb08e8b98c5",
+    "subnet_id": "subnet-006734bfb0cbba0af",
+    "aws_region": "us-east-1",
+    "source_ami": "ami-08e167817c87ed7fd"
+}
