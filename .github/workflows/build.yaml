@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Packer build
-        uses: atoy3731/packer_build_action@master
+        uses: ./.github/actions/build
         with:
           templateFile: 'packer/img.json'
           workingDir: '.'
