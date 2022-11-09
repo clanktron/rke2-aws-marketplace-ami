@@ -2,17 +2,45 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: AWS CloudFormation for Installing Rancher through the RGS Marketplace
   Offering
 
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "Amazon Configuration"
+        Parameters: 
+          - KeyName
+          - VolumeSize
+          - VPCCidr
+      - 
+        Label: 
+          default: "Rancher Configuration"
+        Parameters: 
+          - RancherHostname
+          - ClusterJoinToken
+          - RancherBoostrapPassword
+      - 
+        Label: 
+          default: "HostedZone Configuration (Optional)"
+        Parameters: 
+          - UpdateHostedZone
+          - HostedZoneDomain
+    ParameterLabels: 
+      UpdateHostedZone: 
+        default: "Rancher has a requirement of DNS. If you're currently utilizing Route 53, the following configuration options will create a RecordSet in your domain."
+
 Parameters:
-  ControlPlaneCount:
-    Description: Number of Controlplane Nodes (must be an odd number)
-    Type: Number
-    MinValue: '1'
-    Default: '3'
-  WorkerCount:
-    Description: Number of Worker Nodes
-    Type: Number
-    MinValue: '1'
-    Default: '3'
+  UpdateHostedZone:
+    Description: Whether CloudFormation should create a record in your domain's HostedZone
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
+  HostedZoneDomain:
+    Description: Domain of the HostedZone. Should match your 'RancherHostname' domain. Only required if 'UpdateHostedZone' is true.
+    Type: String
+    Default: "example.com"
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
@@ -42,23 +70,6 @@ Parameters:
     Description: Temporary initializing password for Rancher.
     Type: String
     Default: admin
-  InstanceType:
-    Description: Rancher EC2 instance type
-    Type: String
-    Default: m5.large
-    AllowedValues:
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-    ConstraintDescription: must be a valid EC2 instance type.
-  SSHLocation:
-    Description: ' The IP address range that can be used to SSH to the EC2 instances'
-    Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: '0.0.0.0/0'
-    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
-    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
   VPCCidr:
     Description: 'First 2 octects to use for the VPC (Default: 10.0)'
     Type: String
@@ -67,11 +78,16 @@ Parameters:
     Default: '10.0'
     AllowedPattern: (\d{1,3})\.(\d{1,3})
     ConstraintDescription: must be a valid dot-separated string of the form x.x
-    
+
+Conditions:
+  CreateRecordSet: !Equals 
+    - !Ref UpdateHostedZone
+    - true
+
 Mappings:
   AWSRegionArch2AMI:
     us-gov-east-1:
-      HVM64: ami-02d84e2315e8e08f8
+      HVM64: ami-09e8c94190f4e7b2c
     us-gov-west-1:
       HVM64: ami-05aaa50d3cae6007d
   AWSRegion2AZ:
@@ -100,9 +116,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - VPC
+              - vpc
     Type: AWS::EC2::VPC
 
   ##################
@@ -123,9 +139,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Public Subnet 1
+              - public-1
     Type: AWS::EC2::Subnet
   RancherPublicSubnet2:
     Properties:
@@ -142,9 +158,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Public Subnet 2
+              - public-2
     Type: AWS::EC2::Subnet
   RancherPublicSubnet3:
     Properties:
@@ -161,9 +177,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Public Subnet 3
+              - public-3
     Type: AWS::EC2::Subnet
   
   ###################
@@ -184,9 +200,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Private Subnet 1
+              - private-1
     Type: AWS::EC2::Subnet
   RancherPrivateSubnet2:
     Properties:
@@ -203,9 +219,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Private Subnet 2
+              - private-2
     Type: AWS::EC2::Subnet
   RancherPrivateSubnet3:
     Properties:
@@ -222,9 +238,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Private Subnet 3
+              - private-3
     Type: AWS::EC2::Subnet
 
   #########################
@@ -238,9 +254,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - NAT Gateway
+              - nat-gateway
   NATGatewayEIP:
     Type: AWS::EC2::EIP
     Properties:
@@ -251,9 +267,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - PrivateRouteTable
+              - private-rt-table
     Type: AWS::EC2::RouteTable
   RouteNATGateway:
     DependsOn:
@@ -288,9 +304,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - IGW
+              - igw
   PublicGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -302,9 +318,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - PublicRouteTable
+              - public-rt-table
     Type: AWS::EC2::RouteTable
   PublicRouteToGateway:
     Type: AWS::EC2::Route
@@ -335,7 +351,10 @@ Resources:
   RancherCPLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: RancherCPLaunchTemplate
+      LaunchTemplateName: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - cp-launch-template
       LaunchTemplateData:
         IamInstanceProfile:
           Arn: !GetAtt 'RancherInstanceProfile.Arn'
@@ -344,7 +363,7 @@ Resources:
           - AWSRegionArch2AMI
           - !Ref 'AWS::Region'
           - HVM64
-        InstanceType: !Ref 'InstanceType'
+        InstanceType: 'm5.large'
         SecurityGroupIds:
           - !GetAtt 'RancherCPSecurityGroup.GroupId'
           - !GetAtt 'RancherIngressSecurityGroup.GroupId'
@@ -384,9 +403,9 @@ Resources:
         Version: !GetAtt 'RancherCPLaunchTemplate.LatestVersionNumber'
       LoadBalancerNames:
         - !Ref 'ControlPlaneELB'
-      MaxSize: !Ref 'ControlPlaneCount'
-      MinSize: !Ref 'ControlPlaneCount'
-      DesiredCapacity: !Ref 'ControlPlaneCount'
+      MaxSize: '3'
+      MinSize: '3'
+      DesiredCapacity: '3'
       VPCZoneIdentifier:
         - !Ref 'RancherPrivateSubnet1'
         - !Ref 'RancherPrivateSubnet2'
@@ -394,9 +413,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - CP ASG
+              - cp-asg
           PropagateAtLaunch: true
 
   RancherWorkerLaunchTemplate:
@@ -404,7 +423,10 @@ Resources:
     DependsOn:
       - RancherCPAutoScalingGroup
     Properties:
-      LaunchTemplateName: RancherWorkerLaunchTemplate
+      LaunchTemplateName: !Join
+            - '-'
+            - - !Ref 'AWS::StackName'
+              - worker-launch-template
       LaunchTemplateData:
         IamInstanceProfile:
           Arn: !GetAtt 'RancherInstanceProfile.Arn'
@@ -413,7 +435,7 @@ Resources:
           - AWSRegionArch2AMI
           - !Ref 'AWS::Region'
           - HVM64
-        InstanceType: !Ref 'InstanceType'
+        InstanceType: 'm5.large'
         SecurityGroupIds:
           - !GetAtt 'RancherCPSecurityGroup.GroupId'
           - !GetAtt 'RancherIngressSecurityGroup.GroupId'
@@ -449,9 +471,9 @@ Resources:
       LoadBalancerNames:
         - !Ref 'ControlPlaneELB'
         - !Ref 'RancherELB'
-      MaxSize: !Ref 'WorkerCount'
-      MinSize: !Ref 'WorkerCount'
-      DesiredCapacity: !Ref 'WorkerCount'
+      MaxSize: '3'
+      MinSize: '3'
+      DesiredCapacity: '3'
       VPCZoneIdentifier:
         - !Ref 'RancherPrivateSubnet1'
         - !Ref 'RancherPrivateSubnet2'
@@ -459,9 +481,9 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join
-            - ' '
+            - '-'
             - - !Ref 'AWS::StackName'
-              - Worker ASG
+              - worker-asg
           PropagateAtLaunch: true
 
   #############
@@ -568,10 +590,6 @@ Resources:
           FromPort: '6443'
           ToPort: '6443'
           CidrIp: '0.0.0.0/0'
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: !Ref 'SSHLocation'
   RancherIngressSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -668,6 +686,24 @@ Resources:
         UnhealthyThreshold: '5'
         Interval: '30'
         Timeout: '5'
+
+  ############
+  # Route 53 #
+  ############
+  RancherRecordSet:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateRecordSet
+    DependsOn:
+      - RancherELB
+    Properties:
+      HostedZoneName: !Sub '${HostedZoneDomain}.'
+      Comment: Rancher URL
+      Name: !Sub '${RancherHostname}.'
+      Type: CNAME
+      TTL: '60'
+      ResourceRecords:
+        - !GetAtt 'RancherELB.DNSName'
+  
 Outputs:
   RancherURL:
     Description: URL for Rancher

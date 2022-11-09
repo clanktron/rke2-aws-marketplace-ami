@@ -1,0 +1,23 @@
+name: Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  packer_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Packer build
+        uses: atoy3731/packer_build_action@master
+        with:
+          templateFile: 'packer/img.json'
+          workingDir: '.'
+          varFile: 'packer/vars.hcl'
+        env:
+          RKE2_VERSION: "v1.23.10+rke2r1"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-gov-east-1
