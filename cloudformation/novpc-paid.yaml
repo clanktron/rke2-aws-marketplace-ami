@@ -59,7 +59,7 @@ Parameters:
       - m5.2xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   SSHLocation:
-    Description: ' The IP address range that can be used to SSH to the EC2 instances'
+    Description: 'The IP address range that can be used to SSH to the EC2 instances'
     Type: String
     MinLength: '9'
     MaxLength: '18'
@@ -68,32 +68,16 @@ Parameters:
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
   RancherVPC:
     Description: VPC for Rancher cluster
-    Type: AWS::EC2::VPC:Id
+    Type: AWS::EC2::VPC::Id
     ConstraintDescription: must be the Id of an existing VPC
-  RancherPrivateSubnet1:
-    Description: First private subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing private subnet within the provided VPC
-  RancherPrivateSubnet2:
-    Description: Second private subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing private subnet within the provided VPC
-  RancherPrivateSubnet3:
-    Description: Third private subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing private subnet within the provided VPC
-  RancherPublicSubnet1:
-    Description: First public subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing public subnet within the provided VPC
-  RancherPublicSubnet2:
-    Description: Second public subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing public subnet within the provided VPC
-  RancherPublicSubnet3:
-    Description: Third public subnet for Rancher cluster
-    Type: AWS::EC2::Subnet:Id
-    ConstraintDescription: must be the Id of an existing public subnet within the provided VPC
+  RancherPrivateSubnets:
+    Description: Private subnets for Rancher cluster
+    Type: List<AWS::EC2::Subnet::Id>
+    ConstraintDescription: must be the Id's of 3 existing private subnets within the provided VPC
+  RancherPublicSubnets:
+    Description: Public subnets for Rancher cluster
+    Type: List<AWS::EC2::Subnet::Id>
+    ConstraintDescription: must be the Id's of 3 existing public subnets within the provided VPC
     
 Mappings:
   AWSRegionArch2AMI:
@@ -175,9 +159,7 @@ Resources:
       MinSize: !Ref 'ControlPlaneCount'
       DesiredCapacity: !Ref 'ControlPlaneCount'
       VPCZoneIdentifier:
-        - !Ref 'RancherPrivateSubnet1'
-        - !Ref 'RancherPrivateSubnet2'
-        - !Ref 'RancherPrivateSubnet3'
+        - !Ref 'RancherPrivateSubnets'
       Tags:
         - Key: Name
           Value: !Join
@@ -243,9 +225,7 @@ Resources:
       MinSize: !Ref 'WorkerCount'
       DesiredCapacity: !Ref 'WorkerCount'
       VPCZoneIdentifier:
-        - !Ref 'RancherPrivateSubnet1'
-        - !Ref 'RancherPrivateSubnet2'
-        - !Ref 'RancherPrivateSubnet3'
+        - !Ref 'RancherPrivateSubnets'
       Tags:
         - Key: Name
           Value: !Join
@@ -416,9 +396,7 @@ Resources:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
       Subnets: 
-        - !Ref 'RancherPublicSubnet1'
-        - !Ref 'RancherPublicSubnet2'
-        - !Ref 'RancherPublicSubnet3'
+        - !Ref 'RancherPublicSubnets'
       SecurityGroups:
         - !Ref 'ControlPlaneELBSG'
       CrossZone: 'true'
@@ -439,9 +417,7 @@ Resources:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
       Subnets:
-        - !Ref 'RancherPublicSubnet1'
-        - !Ref 'RancherPublicSubnet2'
-        - !Ref 'RancherPublicSubnet3'
+        - !Ref 'RancherPublicSubnets'
       SecurityGroups:
         - !Ref 'RancherELBSG'
       CrossZone: 'true'
